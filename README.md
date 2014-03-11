@@ -55,3 +55,23 @@ to define an `itree`, we have the following extra requirements:
         // if const_pointer != const value_type*, we also need:
         static key_type get_start(const value_type*);
         static key_type get_end(const value_type*);
+
+
+#### Internals
+
+An intrusive interval tree `itree` is an intrusive red-black tree
+`rbtree` where the key is the left end of each interval, and the extra
+data maintained at each node `n` of the tree is the right-most end of
+all intervals in the subtree rooted at `n`.
+
+In addition to all methods provided by `rbtree`, an `itree` also
+implements the following method:
+
+    intersection_iterator_range interval_intersect(const key_type& int_start, const key_type& int_end);
+
+This produces a `boost::iterator_range` object that can be used to
+efficiently iterate over the intervals stored in the tree that
+intersect the interval given in the query.
+
+For the purposes of computing intersections, all endpoints of all
+intervals are considered to be closed.
