@@ -28,11 +28,10 @@ To properly compile and use an `itree`, the include path must contain
 
 1. The path to the hook-enabled version of Boost Intrusive;
 2. The path to the `include/` folder in this package;
-3. The path to the rest of the Boost header files. Notably,
-   Boost Range library is needed.
-
-Note: The Boost Program Options library is only needed to compile the
-test program, it is not otherwise needed to use an `itree`.
+3. The path to the rest of the Boost header files. The Boost Range
+   library is needed. The Boost Program Options library is only needed
+   to compile the test program, it is not otherwise needed to use an
+   `itree`.
 
 The `itree` struct is not as polished as other intrusive data
 structures provided by Boost Intrusive. Notably, an `itree` can only
