@@ -3,15 +3,18 @@
 
 #### Overview
 
-This package provides a basic implementation of intrusive interval
-trees, as decribed, e.g., in *Introduction to Algorithms* by Cormen et
+This package provides a basic implementation of **intrusive interval
+trees**, as decribed, e.g., in *Introduction to Algorithms* by Cormen et
 al.
 
 The package depends on a version of Boost Intrusive red-black trees
 that provide hooks for maintaining extra data within the nodes of the
-tree.
+tree. Specifically, the code assumes the red-black trees know how to
+use a `recompute_data()` method in order to maintain extra data in the
+node of the tree.
 
-A separate package provides these hooks.
+*This package does not work with the stock Boost Intrusive library*. A
+separate package provides a hook-enabled version of Boost Intrusive.
 
 
 #### Usage
@@ -49,8 +52,6 @@ to define an `itree`, we have the following extra requirements:
         typedef (implementation_defined) key_type;
         static key_type get_start(const_pointer);
         static key_type get_end(const_pointer);
+        // if const_pointer != const value_type*, we also need:
         static key_type get_start(const value_type*);
         static key_type get_end(const value_type*);
-
-    Clearly, the last two methods are only necessary if
-    `const_pointer` is different from `const value_type*`.
