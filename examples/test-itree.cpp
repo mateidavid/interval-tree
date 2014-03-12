@@ -3,9 +3,15 @@
 #include <boost/program_options.hpp>
 #include <boost/intrusive/list.hpp>
 #include <boost/intrusive/itree.hpp>
+#include <boost/tti/tti.hpp>
 
 using namespace std;
 
+namespace detail
+{
+    //check Boost Intrusive contains hooks to maintain extra data
+    typedef boost::intrusive::detail::extra_data_manager< void > extra_data_manager_check;
+}
 
 struct Value
 {
@@ -93,7 +99,6 @@ struct ITree_Value_Traits
     static key_type get_end(const_pointer n) { return n->_end; }
 };
 
-
 template <class T>
 struct List_Node_Traits
 {
@@ -130,6 +135,31 @@ struct List_Value_Traits
 typedef boost::intrusive::itree< ITree_Value_Traits< Value > > itree_type;
 typedef itree_type::itree_algo itree_algo;
 typedef boost::intrusive::list< Value, boost::intrusive::value_traits< List_Value_Traits< Value > > > list_type;
+
+static_assert(
+    boost::intrusive::detail::extra_data_manager<
+        boost::intrusive::detail::ITree_Node_Traits < ITree_Value_Traits< Value > >
+    >::enabled,
+    "Extra data manager is not enabled");
+
+template<class T>
+class delete_disposer
+{
+   public:
+   template <class Pointer>
+      void operator()(Pointer p)
+   {
+      delete boost::intrusive::detail::to_raw_pointer(p);
+   }
+};
+
+template<class T>
+class new_cloner
+{
+   public:
+      T *operator()(const T &t)
+   {  return new T(t);  }
+};
 
 const_ptr_type get_root(itree_type& t)
 {
@@ -200,6 +230,7 @@ struct Program_Options
     size_t range_max;
     size_t n_ops;
     size_t seed;
+    bool print_tree_each_op;
 };
 
 
@@ -221,7 +252,7 @@ void real_main(const Program_Options& po)
     clog << "----- main loop\n";
     for (size_t i = 0; i < po.n_ops; ++i)
     {
-        int op = int(drand48()*3);
+        int op = int(drand48()*5);
         if (op == 0)
         {
             // insert new element
@@ -270,7 +301,7 @@ void real_main(const Program_Options& po)
             ptr_type a = new Value();
             a->_start = e1;
             a->_end = e2;
-            clog << "checking: " << *a << '\n';
+            clog << "checking intersection with: " << *a << '\n';
             // first count intersections using list
             size_t res_list = 0;
             for (const auto& v : l)
@@ -306,6 +337,31 @@ void real_main(const Program_Options& po)
             clog << "intersection ok, size = " << res_list << " / " << l.size() << '\n';
             delete a;
         }
+        else if (op == 3)
+        {
+            // check max_end fields in the tree
+            clog << "checking max_end fields\n";
+            check_max_ends(t);
+        }
+        else if (op == 4)
+        {
+            // clon tree and check
+            clog << "cloning tree of size: " << t.size() << '\n';
+            itree_type t2;
+            t2.clone_from(t, new_cloner< Value >(), delete_disposer< Value >());
+            clog << "checking max_end fields in clone of size: " << t2.size() << '\n';
+            check_max_ends(t2);
+            clog << "destroying clone\n";
+            ptr_type tmp;
+            while ((tmp = t2.unlink_leftmost_without_rebalance()))
+            {
+                delete tmp;
+            }
+        }
+        if (po.print_tree_each_op)
+        {
+            print_tree(t);
+        }
     }
     clog << "----- clearing list\n";
     while (l.size() > 0)
@@ -338,6 +394,7 @@ int main(int argc, char* argv[])
             ("range-max", bo::value<size_t>(&po.range_max)->default_value(20), "maximum endpoint")
             ("n-ops", bo::value<size_t>(&po.n_ops)->default_value(1000), "number of operations")
             ("seed", bo::value<size_t>(&po.seed)->default_value(0), "random number generator seed")
+            ("print-tree", "print tree after each operation")
             ;
         cmdline_opts_desc.add(generic_opts_desc).add(config_opts_desc).add(hidden_opts_desc);
         visible_opts_desc.add(generic_opts_desc).add(config_opts_desc);
@@ -353,6 +410,7 @@ int main(int argc, char* argv[])
         {
             po.seed = time(NULL);
         }
+        po.print_tree_each_op = vm.count("print-tree") > 0;
     }
     catch(exception& e)
     {
