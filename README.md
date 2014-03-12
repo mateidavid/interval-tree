@@ -7,11 +7,12 @@ This package provides a basic implementation of **intrusive interval
 trees**, as decribed, e.g., in *Introduction to Algorithms* by Cormen et
 al.
 
-The package depends on a version of Boost Intrusive red-black trees
-that provide hooks for maintaining extra data within the nodes of the
-tree. Specifically, the code assumes the red-black trees know how to
-use a `recompute_data()` method in order to maintain extra data in the
-node of the tree.
+The package depends on a version of the Boost Intrusive library, where
+the underlying trees provide hooks for maintaining extra data within
+the nodes of the tree. Specifically, the code assumes the underlying
+trees know how to use `clone_extra_data()` and
+`recompute_extra_data()` methods in order to maintain extra data in
+the node of the tree.
 
 *This package does not work with the stock Boost Intrusive library*. A
 separate package provides a hook-enabled version of Boost Intrusive.
@@ -28,10 +29,9 @@ To properly compile and use an `itree`, the include path must contain
 
 1. The path to the hook-enabled version of Boost Intrusive;
 2. The path to the `include/` folder in this package;
-3. The path to the rest of the Boost header files. The Boost Range
-   library is needed. The Boost Program Options library is only needed
-   to compile the test program, it is not otherwise needed to use an
-   `itree`.
+3. The path to the rest of the Boost header files. The Boost TTI &
+   Range libraries are needed. The Boost Program Options library is
+   only needed to compile the test program.
 
 The `itree` struct is not as polished as other intrusive data
 structures provided by Boost Intrusive. Notably, an `itree` can only
@@ -59,12 +59,13 @@ to define an `itree`, we have the following extra requirements:
 
 #### Internals
 
-An intrusive interval tree `itree` is an intrusive red-black tree
-`rbtree` where the key is the left end of each interval, and the extra
-data maintained at each node `n` of the tree is the right-most end of
-all intervals in the subtree rooted at `n`.
+An intrusive interval tree `itree` is an intrusive `multiset` (which
+in turn, is a red-black tree `rbtree`) where the key is the left end
+of each interval, and the extra data maintained at each node `n` of
+the tree is the right-most end of all intervals in the subtree rooted
+at `n`.
 
-In addition to all methods provided by `rbtree`, an `itree` also
+In addition to all methods provided by `multiset`, an `itree` also
 implements the following method:
 
     intersection_iterator_range interval_intersect(const key_type& int_start, const key_type& int_end);
