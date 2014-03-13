@@ -42,45 +42,31 @@ private:
                   "Node Traits missing set_max_end()");
 public:
     typedef ITree_Node_Traits node_traits;
-    using typename Base::node;
     using typename Base::node_ptr;
     using typename Base::const_node_ptr;
-    using typename Base::color;
     using typename Base::key_type;
-    using Base::get_parent;
-    using Base::set_parent;
-    using Base::get_left;
-    using Base::set_left;
-    using Base::get_right;
-    using Base::set_right;
-    using Base::get_color;
-    using Base::set_color;
-    using Base::black;
-    using Base::red;
-    using Base::get_max_end;
-    using Base::set_max_end;
 
     static void init_data(node_ptr n)
     {
-        set_max_end(n, Value_Traits::get_end(Value_Traits::to_value_ptr(n)));
+        Base::set_max_end(n, Value_Traits::get_end(Value_Traits::to_value_ptr(n)));
     }
     static void recompute_extra_data(node_ptr n)
     {
         init_data(n);
-        key_type tmp = get_max_end(n);
-        if (get_left(n))
+        key_type tmp = Base::get_max_end(n);
+        if (Base::get_left(n))
         {
-            tmp = std::max(tmp, get_max_end(get_left(n)));
+            tmp = std::max(tmp, Base::get_max_end(Base::get_left(n)));
         }
-        if (get_right(n))
+        if (Base::get_right(n))
         {
-            tmp = std::max(tmp, get_max_end(get_right(n)));
+            tmp = std::max(tmp, Base::get_max_end(Base::get_right(n)));
         }
-        set_max_end(n, tmp);
+        Base::set_max_end(n, tmp);
     }
     static void clone_extra_data(node_ptr dest, const_node_ptr src)
     {
-        set_max_end(dest, get_max_end(src));
+        Base::set_max_end(dest, Base::get_max_end(src));
     }
 };
 
@@ -106,17 +92,6 @@ private:
                   "Value Traits missing get_end(const value_type*)");
 public:
     typedef ITree_Node_Traits< Value_Traits > node_traits;
-    using typename Base::value_type;
-    using typename Base::node_ptr;
-    using typename Base::const_node_ptr;
-    using typename Base::pointer;
-    using typename Base::const_pointer;
-    using typename Base::reference;
-    using typename Base::const_reference;
-    using Base::to_node_ptr;
-    using Base::to_value_ptr;
-    using Base::get_start;
-    using Base::get_end;
 };
 
 /** Comparator for Interval Tree.
