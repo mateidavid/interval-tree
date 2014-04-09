@@ -40,8 +40,9 @@ struct itree_algorithms : public rbtree_algorithms< typename Value_Traits::node_
     }
 
     static node_ptr get_next_interval(
-        const key_type& int_start, const key_type& int_end, node_ptr n, int stage)
+        const key_type& int_start, const key_type& int_end, const_node_ptr _n, int stage)
     {
+        node_ptr n = pointer_traits< node_ptr >::const_cast_from(_n);
         while (true)
         {
             if (not n)
