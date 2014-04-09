@@ -139,7 +139,8 @@ public:
     explicit operator const Intersection_Iterator< Value_Traits, false >& () const
     { return *reinterpret_cast< const Intersection_Iterator< Value_Traits, false >* >(this); }
 
-    value_type* operator -> () const { return (&dereference()).operator ->(); }
+    typename boost::mpl::if_c< is_const, const value_type*, value_type* >::type
+    operator -> () const { return (&dereference()).operator ->(); }
 
 private:
     friend class boost::iterator_core_access;
@@ -191,28 +192,28 @@ public:
      * @param int_end Interval end.
      * @return An iterator range for the intersection (begin, end).
      */
-    intersection_iterator_range interval_intersect(const key_type& int_start, const key_type& int_end)
+    intersection_const_iterator_range interval_intersect(const key_type& int_start, const key_type& int_end) const
     {
         return make_iterator_range(interval_intersect_begin(int_start, int_end),
                                    interval_intersect_end());
     }
 
 private:
-    intersection_iterator interval_intersect_begin(const key_type& int_start, const key_type& int_end)
+    intersection_const_iterator interval_intersect_begin(const key_type& int_start, const key_type& int_end) const
     {
-        node_ptr header = this->header_ptr();
+        const_node_ptr header = this->header_ptr();
         if (not Node_Traits::get_parent(header))
         {
-            return intersection_iterator(interval_intersect_end());
+            return interval_intersect_end();
         }
         return intersection_iterator(
             itree_algo::get_next_interval(int_start, int_end, Node_Traits::get_parent(header), 0),
             int_start, int_end);
     }
-    intersection_iterator interval_intersect_end()
+    intersection_const_iterator interval_intersect_end() const
     {
-        node_ptr header = this->header_ptr();
-        return intersection_iterator(header);
+        node_ptr header = boost::intrusive::pointer_traits< node_ptr >::const_cast_from(this->header_ptr());
+        return intersection_const_iterator(header);
     }
 };
 
