@@ -215,6 +215,27 @@ public:
                                    interval_intersect_end());
     }
 
+    /** Get maximum right endpoint is the tree. */
+    key_type max_end() const
+    {
+        return Node_Traits::get_max_end(this->header_ptr());
+    }
+
+    /** Inform interval tree of an external shift in all interval endpoints.
+     * NOTE: This function shifts the internal data stored in the interval tree,
+     * but not the elements (intervals) themselves.
+     * @param delta Value to add to all endpoints.
+     */
+    template < typename delta_type >
+    void implement_shift(delta_type delta)
+    {
+        for (auto ref : *this)
+        {
+            node_ptr n = &ref;
+            Node_Traits::set_max_end(n, key_type(delta_type(Node_Traits::get_max_end(n)) + delta));
+        }
+    }
+
 private:
     intersection_const_iterator interval_intersect_begin(const key_type& int_start, const key_type& int_end) const
     {
