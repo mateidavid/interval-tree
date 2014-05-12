@@ -28,7 +28,7 @@ BOOST_TTI_HAS_STATIC_MEMBER_FUNCTION(get_end)
  * This Traits class defines the node maintenance methods that hook into
  * the rbtree algorithms.
  */
-template <typename Value_Traits>
+template < typename Value_Traits >
 struct ITree_Node_Traits : public Value_Traits::node_traits
 {
 private:
@@ -68,13 +68,13 @@ public:
     {
         Base::set_max_end(dest, Base::get_max_end(src));
     }
-};
+}; // struct ITree_Node_Traits
 
 /** Value Traits adaptor class for Interval Tree.
  *
  * The only function is to change the node_traits typedef.
  */
-template <typename Value_Traits>
+template < typename Value_Traits >
 struct ITree_Value_Traits : public Value_Traits
 {
 private:
@@ -92,12 +92,10 @@ private:
                   "Value Traits missing get_end(const value_type*)");
 public:
     typedef ITree_Node_Traits< Value_Traits > node_traits;
-};
+}; // struct ITree_Value_Traits
 
-/** Comparator for Interval Tree.
- *
- */
-template <typename Value_Traits>
+/** Comparator for Interval Tree. */
+template < typename Value_Traits >
 struct ITree_Compare
 {
     typedef typename Value_Traits::value_type value_type;
@@ -105,7 +103,7 @@ struct ITree_Compare
     {
         return Value_Traits::get_start(&lhs) < Value_Traits::get_start(&rhs);
     }
-};
+}; // struct ITree_Compare
 
 template < typename Value_Traits, bool is_const >
 class Intersection_Iterator
@@ -171,24 +169,18 @@ private:
     node_ptr _node;
     key_type _int_start;
     key_type _int_end;
-};
+}; // class Intersection_Iterator
 
-}
+} // namespace detail
 
-template <typename Value_Traits>
-class itree
-  : public multiset<
-        typename Value_Traits::value_type,
-        compare< detail::ITree_Compare< Value_Traits > >,
-        value_traits< detail::ITree_Value_Traits< Value_Traits > >
-    >
+template < class Value_Traits, class Compare, class Size_Type, bool Constant_Time_Size >
+class itree_impl
+    : public multiset_impl< Value_Traits, Compare, Size_Type, Constant_Time_Size >
 {
 public:
-    typedef multiset<
-        typename Value_Traits::value_type,
-        compare< detail::ITree_Compare< Value_Traits > >,
-        value_traits< detail::ITree_Value_Traits< Value_Traits > >
-    > Base;
+    typedef multiset_impl< Value_Traits, Compare, Size_Type, Constant_Time_Size > Base;
+    using typename Base::value_compare;
+    using typename Base::value_traits;
     typedef itree_algorithms< Value_Traits > itree_algo;
     typedef typename Value_Traits::node_traits Node_Traits;
     typedef typename Value_Traits::key_type key_type;
@@ -201,18 +193,38 @@ public:
     typedef boost::iterator_range< detail::Intersection_Iterator< Value_Traits, false > > intersection_iterator_range;
     typedef boost::iterator_range< detail::Intersection_Iterator< Value_Traits, true > > intersection_const_iterator_range;
 
-    // inherit multiset constructors
-    using Base::Base;
+    // disallow copy
+    itree_impl(const itree_impl&) = delete;
+    itree_impl& operator = (const itree_impl&) = delete;
+
+    explicit itree_impl(const value_compare& cmp = value_compare(),
+                        const value_traits& v_traits = value_traits())
+        :  Base(cmp, v_traits)
+    {}
+
+    template < class Iterator >
+    itree_impl(Iterator b, Iterator e,
+               const value_compare& cmp = value_compare(),
+               const value_traits& v_traits = value_traits())
+        : Base(false, b, e, cmp, v_traits)
+    {}
+
+    itree_impl(itree_impl&& x)
+        :  Base(std::move(static_cast< Base& >(x)))
+    {}
+
+    itree_impl& operator = (itree_impl&& other)
+    { return static_cast< itree_impl& >(Base::operator = (std::move(static_cast< Base& >(other)))); }
 
     /** Return intervals in the tree that intersect a given interval.
      * @param int_start Interval start.
      * @param int_end Interval end.
      * @return An iterator range for the intersection (begin, end).
      */
-    intersection_const_iterator_range interval_intersect(const key_type& int_start, const key_type& int_end) const
+    intersection_const_iterator_range iintersect(const key_type& int_start, const key_type& int_end) const
     {
-        return make_iterator_range(interval_intersect_begin(int_start, int_end),
-                                   interval_intersect_end());
+        return make_iterator_range(iintersect_begin(int_start, int_end),
+                                   iintersect_end());
     }
 
     /** Get maximum right endpoint is the tree. */
@@ -237,25 +249,84 @@ public:
     }
 
 private:
-    intersection_const_iterator interval_intersect_begin(const key_type& int_start, const key_type& int_end) const
+    intersection_const_iterator iintersect_begin(const key_type& int_start, const key_type& int_end) const
     {
         const_node_ptr header = this->header_ptr();
         if (not Node_Traits::get_parent(header))
         {
-            return interval_intersect_end();
+            return iintersect_end();
         }
         return intersection_const_iterator(
             itree_algo::get_next_interval(int_start, int_end, Node_Traits::get_parent(header), 0),
             int_start, int_end);
     }
-    intersection_const_iterator interval_intersect_end() const
+    intersection_const_iterator iintersect_end() const
     {
         const_node_ptr header = this->header_ptr();
         return intersection_const_iterator(header);
     }
-};
+}; // class itree_impl
 
-}
-}
+template < class T, class ...Options >
+struct make_itree
+{
+    typedef typename pack_options< rbtree_defaults, Options... >::type packed_options;
+    typedef typename detail::get_value_traits< T, typename packed_options::proto_value_traits >::type value_traits;
+    typedef itree_impl< detail::ITree_Value_Traits< value_traits >
+                      , detail::ITree_Compare< value_traits >
+                      , typename packed_options::size_type
+                      , packed_options::constant_time_size
+                      > type;
+}; // class make_itree
+
+template < class T, class ...Options >
+class itree
+    : public make_itree< T, Options... >::type
+{
+    typedef typename make_itree< T, Options... >::type Base;
+
+public:
+    using typename Base::value_compare;
+    using typename Base::value_traits;
+    using typename Base::iterator;
+    using typename Base::const_iterator;
+    static_assert(std::is_same< typename value_traits::value_type, T >::value, "conflicting value and value traits types");
+
+    // disallow copy
+    itree(const itree&) = delete;
+    itree& operator = (const itree&) = delete;
+
+    explicit itree(const value_compare& cmp = value_compare(),
+                   const value_traits& v_traits = value_traits())
+        : Base(cmp, v_traits)
+    {}
+
+    template < class Iterator >
+    itree(Iterator b, Iterator e,
+          const value_compare& cmp = value_compare(),
+          const value_traits& v_traits = value_traits())
+        : Base(false, b, e, cmp, v_traits)
+    {}
+
+    itree(itree&& other)
+        : Base(std::move(static_cast< Base& >(other)))
+    {}
+
+    itree& operator = (itree&& other)
+    { return static_cast< itree& >(Base::operator = (std::move(static_cast< Base& >(other)))); }
+
+    // upcast container_from_iterator return values
+    static itree& container_from_end_iterator(iterator end_iterator)
+    { return static_cast< itree& >(Base::container_from_end_iterator(end_iterator)); }
+    static const itree& container_from_end_iterator(const_iterator end_iterator)
+    { return static_cast< const itree& >(Base::container_from_end_iterator(end_iterator)); }
+    static itree& container_from_iterator(iterator it)
+    { return static_cast< itree& >(Base::container_from_iterator(it)); }
+    static const itree& container_from_iterator(const_iterator it)
+    { return static_cast< const itree& >(Base::container_from_iterator(it)); }
+}; // class itree
+
+} // namespace intrusive
+} // namespace boost
 
 #endif
