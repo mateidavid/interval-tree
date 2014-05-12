@@ -6,16 +6,23 @@
 #include <boost/tti/tti.hpp>
 
 using namespace std;
+namespace bi = boost::intrusive;
+namespace bo = boost::program_options;
 
 namespace detail
 {
     //check Boost Intrusive contains hooks to maintain extra data
-    typedef boost::intrusive::detail::extra_data_manager< void > extra_data_manager_check;
+    typedef bi::detail::extra_data_manager< void > extra_data_manager_check;
 }
 
 struct Value
 {
     typedef Value* ptr_type;
+
+    Value() = default;
+    Value(const Value& other)
+        : _start(other._start), _end(other._end),
+          _parent(), _l_child(), _r_child(), _list_prev(), _list_next() {}
 
     size_t _start;
     size_t _end;
@@ -26,8 +33,8 @@ struct Value
     int _col;
     size_t _max_end;
 
-    ptr_type _list_next;
     ptr_type _list_prev;
+    ptr_type _list_next;
 };
 
 typedef Value* ptr_type;
@@ -89,7 +96,7 @@ struct ITree_Value_Traits
     typedef value_type& reference;
     typedef const value_type& const_reference;
 
-    static const boost::intrusive::link_mode_type link_mode = boost::intrusive::normal_link;
+    static const bi::link_mode_type link_mode = bi::safe_link;
 
     static node_ptr to_node_ptr (reference value) { return &value; }
     static const_node_ptr to_node_ptr (const_reference value) { return &value; }
@@ -124,7 +131,7 @@ struct List_Value_Traits
     typedef value_type& reference;
     typedef const value_type& const_reference;
 
-    static const boost::intrusive::link_mode_type link_mode = boost::intrusive::normal_link;
+    static const bi::link_mode_type link_mode = bi::safe_link;
 
     static node_ptr to_node_ptr (reference value) { return &value; }
     static const_node_ptr to_node_ptr (const_reference value) { return &value; }
@@ -132,33 +139,33 @@ struct List_Value_Traits
     static const_pointer to_value_ptr(const_node_ptr n) { return n; }
 };
 
-typedef boost::intrusive::itree< ITree_Value_Traits< Value > > itree_type;
+typedef bi::itree< Value, bi::value_traits< ITree_Value_Traits< Value > > > itree_type;
 typedef itree_type::itree_algo itree_algo;
-typedef boost::intrusive::list< Value, boost::intrusive::value_traits< List_Value_Traits< Value > > > list_type;
+typedef bi::list< Value, bi::value_traits< List_Value_Traits< Value > > > list_type;
 
 static_assert(
-    boost::intrusive::detail::extra_data_manager<
-        boost::intrusive::detail::ITree_Node_Traits < ITree_Value_Traits< Value > >
+    bi::detail::extra_data_manager<
+        bi::detail::ITree_Node_Traits < ITree_Value_Traits< Value > >
     >::enabled,
     "Extra data manager is not enabled");
 
-template<class T>
-class delete_disposer
+template < class T >
+struct delete_disposer
 {
-   public:
-   template <class Pointer>
-      void operator()(Pointer p)
-   {
-      delete boost::intrusive::detail::to_raw_pointer(p);
-   }
+    template < typename Pointer >
+    void operator () (Pointer p)
+    {
+        delete bi::detail::to_raw_pointer(p);
+    }
 };
 
-template<class T>
-class new_cloner
+template < class T >
+struct new_cloner
 {
-   public:
-      T *operator()(const T &t)
-   {  return new T(t);  }
+    T* operator () (const T& t)
+    {
+        return new T(t);
+    }
 };
 
 const_ptr_type get_root(itree_type& t)
@@ -313,7 +320,7 @@ void real_main(const Program_Options& po)
             }
             // count with iterator range
             size_t res_iterator_range = 0;
-            for (const auto& r : t.interval_intersect(e1, e2))
+            for (const auto& r : t.iintersect(e1, e2))
             {
                 (void)r;
                 ++res_iterator_range;
@@ -377,7 +384,6 @@ void real_main(const Program_Options& po)
 
 int main(int argc, char* argv[])
 {
-    namespace bo = boost::program_options;
     Program_Options po;
     try
     {
