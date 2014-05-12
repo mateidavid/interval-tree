@@ -173,14 +173,15 @@ private:
 
 } // namespace detail
 
-template < class Value_Traits, class Compare, class Size_Type, bool Constant_Time_Size >
+template < class Value_Traits, class Compare, class Size_Type, bool Constant_Time_Size, typename Node_Allocator >
 class itree_impl
-    : public multiset_impl< Value_Traits, Compare, Size_Type, Constant_Time_Size >
+    : public multiset_impl< Value_Traits, Compare, Size_Type, Constant_Time_Size, Node_Allocator >
 {
 public:
-    typedef multiset_impl< Value_Traits, Compare, Size_Type, Constant_Time_Size > Base;
+    typedef multiset_impl< Value_Traits, Compare, Size_Type, Constant_Time_Size, Node_Allocator > Base;
     using typename Base::value_compare;
     using typename Base::value_traits;
+    using typename Base::node_allocator_type;
     typedef itree_algorithms< Value_Traits > itree_algo;
     typedef typename Value_Traits::node_traits Node_Traits;
     typedef typename Value_Traits::key_type key_type;
@@ -198,15 +199,17 @@ public:
     itree_impl& operator = (const itree_impl&) = delete;
 
     explicit itree_impl(const value_compare& cmp = value_compare(),
-                        const value_traits& v_traits = value_traits())
-        :  Base(cmp, v_traits)
+                        const value_traits& v_traits = value_traits(),
+                        const node_allocator_type& alloc = node_allocator_type())
+        :  Base(cmp, v_traits, alloc)
     {}
 
     template < class Iterator >
     itree_impl(Iterator b, Iterator e,
                const value_compare& cmp = value_compare(),
-               const value_traits& v_traits = value_traits())
-        : Base(false, b, e, cmp, v_traits)
+               const value_traits& v_traits = value_traits(),
+               const node_allocator_type& alloc = node_allocator_type())
+        : Base(false, b, e, cmp, v_traits, alloc)
     {}
 
     itree_impl(itree_impl&& x)
@@ -276,6 +279,7 @@ struct make_itree
                       , detail::ITree_Compare< value_traits >
                       , typename packed_options::size_type
                       , packed_options::constant_time_size
+                      , typename packed_options::node_allocator_type
                       > type;
 }; // class make_itree
 
@@ -288,6 +292,7 @@ class itree
 public:
     using typename Base::value_compare;
     using typename Base::value_traits;
+    using typename Base::node_allocator_type;
     using typename Base::iterator;
     using typename Base::const_iterator;
     static_assert(std::is_same< typename value_traits::value_type, T >::value, "conflicting value and value traits types");
@@ -297,15 +302,17 @@ public:
     itree& operator = (const itree&) = delete;
 
     explicit itree(const value_compare& cmp = value_compare(),
-                   const value_traits& v_traits = value_traits())
-        : Base(cmp, v_traits)
+                   const value_traits& v_traits = value_traits(),
+                   const node_allocator_type& alloc = node_allocator_type())
+        : Base(cmp, v_traits, alloc)
     {}
 
     template < class Iterator >
     itree(Iterator b, Iterator e,
           const value_compare& cmp = value_compare(),
-          const value_traits& v_traits = value_traits())
-        : Base(false, b, e, cmp, v_traits)
+          const value_traits& v_traits = value_traits(),
+          const node_allocator_type& alloc = node_allocator_type())
+        : Base(false, b, e, cmp, v_traits, alloc)
     {}
 
     itree(itree&& other)
