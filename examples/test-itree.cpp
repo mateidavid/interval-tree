@@ -139,7 +139,9 @@ struct List_Value_Traits
     static const_pointer to_value_ptr(const_node_ptr n) { return n; }
 };
 
-typedef bi::itree< Value, bi::value_traits< ITree_Value_Traits< Value > > > itree_type;
+typedef bi::itree< Value,
+                   bi::value_traits< ITree_Value_Traits< Value > >,
+                   bi::node_allocator_type< std::allocator< Value > > > itree_type;
 typedef itree_type::itree_algo itree_algo;
 typedef bi::list< Value, bi::value_traits< List_Value_Traits< Value > > > list_type;
 
@@ -355,15 +357,12 @@ void real_main(const Program_Options& po)
             // clon tree and check
             clog << "cloning tree of size: " << t.size() << '\n';
             itree_type t2;
-            t2.clone_from(t, new_cloner< Value >(), delete_disposer< Value >());
+            //t2.clone_from(t, new_cloner< Value >(), delete_disposer< Value >());
+            t2.clone_from(t);
             clog << "checking max_end fields in clone of size: " << t2.size() << '\n';
             check_max_ends(t2);
             clog << "destroying clone\n";
-            ptr_type tmp;
-            while ((tmp = t2.unlink_leftmost_without_rebalance()))
-            {
-                delete tmp;
-            }
+            t2.clear_and_dispose();
         }
         if (po.print_tree_each_op)
         {
