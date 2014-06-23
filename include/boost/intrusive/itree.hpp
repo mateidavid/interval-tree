@@ -173,14 +173,16 @@ private:
 
 } // namespace detail
 
-template < class Value_Traits, class Compare, class Size_Type, bool Constant_Time_Size >
+
+template < class Value_Traits, class Compare, class Size_Type, bool Constant_Time_Size, typename Header_Holder >
 class itree_impl
-    : public multiset_impl< Value_Traits, Compare, Size_Type, Constant_Time_Size >
+    : public multiset_impl< Value_Traits, Compare, Size_Type, Constant_Time_Size, Header_Holder >
 {
 public:
-    typedef multiset_impl< Value_Traits, Compare, Size_Type, Constant_Time_Size > Base;
+    typedef multiset_impl< Value_Traits, Compare, Size_Type, Constant_Time_Size, Header_Holder > Base;
     using typename Base::value_compare;
     using typename Base::value_traits;
+    using typename Base::header_holder_type;
     typedef itree_algorithms< Value_Traits > itree_algo;
     typedef typename Value_Traits::node_traits Node_Traits;
     typedef typename Value_Traits::key_type key_type;
@@ -272,10 +274,12 @@ struct make_itree
 {
     typedef typename pack_options< rbtree_defaults, Options... >::type packed_options;
     typedef typename detail::get_value_traits< T, typename packed_options::proto_value_traits >::type value_traits;
+    typedef typename detail::get_header_holder_type< value_traits, typename packed_options::header_holder_type >::type header_holder_type;
     typedef itree_impl< detail::ITree_Value_Traits< value_traits >
                       , detail::ITree_Compare< value_traits >
                       , typename packed_options::size_type
                       , packed_options::constant_time_size
+                      , header_holder_type
                       > type;
 }; // class make_itree
 
@@ -288,6 +292,7 @@ class itree
 public:
     using typename Base::value_compare;
     using typename Base::value_traits;
+    using typename Base::header_holder_type;
     using typename Base::iterator;
     using typename Base::const_iterator;
     static_assert(std::is_same< typename value_traits::value_type, T >::value, "conflicting value and value traits types");

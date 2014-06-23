@@ -359,11 +359,7 @@ void real_main(const Program_Options& po)
             clog << "checking max_end fields in clone of size: " << t2.size() << '\n';
             check_max_ends(t2);
             clog << "destroying clone\n";
-            ptr_type tmp;
-            while ((tmp = t2.unlink_leftmost_without_rebalance()))
-            {
-                delete tmp;
-            }
+            t2.clear_and_dispose(delete_disposer< Value >());
         }
         if (po.print_tree_each_op)
         {
