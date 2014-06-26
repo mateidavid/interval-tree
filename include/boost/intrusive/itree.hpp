@@ -229,10 +229,11 @@ public:
                                    iintersect_end());
     }
 
-    /** Get maximum right endpoint is the tree. */
+    /** Get maximum right endpoint in the tree. */
     key_type max_end() const
     {
-        return Node_Traits::get_max_end(this->header_ptr());
+        ASSERT(not this->empty());
+        return Node_Traits::get_max_end(itree_algo::root_node(this->header_ptr()));
     }
 
     /** Inform interval tree of an external shift in all interval endpoints.
@@ -295,7 +296,7 @@ public:
     using typename Base::header_holder_type;
     using typename Base::iterator;
     using typename Base::const_iterator;
-    static_assert(std::is_same< typename value_traits::value_type, T >::value, "conflicting value and value traits types");
+    static_assert(std::is_same< typename Base::value_traits::value_type, T >::value, "conflicting value and value traits types");
 
     // disallow copy
     itree(const itree&) = delete;
