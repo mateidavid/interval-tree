@@ -29,7 +29,7 @@ BOOST_TTI_HAS_STATIC_MEMBER_FUNCTION(get_end)
  * the rbtree algorithms.
  */
 template < typename Value_Traits >
-struct ITree_Node_Traits : public Value_Traits::node_traits
+struct itree_node_traits : public Value_Traits::node_traits
 {
 private:
     typedef typename Value_Traits::node_traits Base;
@@ -41,7 +41,7 @@ private:
     static_assert(has_static_member_function_set_max_end< Base, void (typename Base::node_ptr, typename Base::key_type)>::value,
                   "Node Traits missing set_max_end()");
 public:
-    typedef ITree_Node_Traits node_traits;
+    typedef itree_node_traits node_traits;
     using typename Base::node_ptr;
     using typename Base::const_node_ptr;
     using typename Base::key_type;
@@ -68,14 +68,14 @@ public:
     {
         Base::set_max_end(dest, Base::get_max_end(src));
     }
-}; // struct ITree_Node_Traits
+}; // struct itree_node_traits
 
 /** Value Traits adaptor class for Interval Tree.
  *
  * The only function is to change the node_traits typedef.
  */
 template < typename Value_Traits >
-struct ITree_Value_Traits : public Value_Traits
+struct itree_value_traits : public Value_Traits
 {
 private:
     typedef Value_Traits Base;
@@ -91,19 +91,19 @@ private:
     static_assert(has_static_member_function_get_end< Base, typename Base::key_type (const typename Base::value_type*)>::value,
                   "Value Traits missing get_end(const value_type*)");
 public:
-    typedef ITree_Node_Traits< Value_Traits > node_traits;
-}; // struct ITree_Value_Traits
+    typedef itree_node_traits< Value_Traits > node_traits;
+}; // struct itree_value_traits
 
 /** Comparator for Interval Tree. */
 template < typename Value_Traits >
-struct ITree_Compare
+struct itree_compare
 {
     typedef typename Value_Traits::value_type value_type;
     bool operator () (const value_type& lhs, const value_type& rhs) const
     {
         return Value_Traits::get_start(&lhs) < Value_Traits::get_start(&rhs);
     }
-}; // struct ITree_Compare
+}; // struct itree_compare
 
 template < typename Value_Traits, bool is_const >
 class Intersection_Iterator
@@ -276,8 +276,8 @@ struct make_itree
     typedef typename pack_options< rbtree_defaults, Options... >::type packed_options;
     typedef typename detail::get_value_traits< T, typename packed_options::proto_value_traits >::type value_traits;
     typedef typename detail::get_header_holder_type< value_traits, typename packed_options::header_holder_type >::type header_holder_type;
-    typedef itree_impl< detail::ITree_Value_Traits< value_traits >
-                      , detail::ITree_Compare< value_traits >
+    typedef itree_impl< detail::itree_value_traits< value_traits >
+                      , detail::itree_compare< value_traits >
                       , typename packed_options::size_type
                       , packed_options::constant_time_size
                       , header_holder_type
