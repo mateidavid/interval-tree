@@ -1,6 +1,8 @@
 #ifndef __ITREE_HPP
 #define __ITREE_HPP
 
+#include <limits>
+#include <cassert>
 #include <boost/intrusive/set.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/range/iterator_range.hpp>
@@ -249,6 +251,36 @@ public:
             node_ptr n = &ref;
             Node_Traits::set_max_end(n, key_type(delta_type(Node_Traits::get_max_end(n)) + delta));
         }
+    }
+
+    bool check() const
+    {
+        if (this->empty())
+        {
+            return true;
+        }
+        node_ptr root_node = itree_algo::root_node(this->header_ptr());
+        key_type tmp;
+        assert(check_node(root_node, std::numeric_limits<key_type>::min(), std::numeric_limits<key_type>::max(), tmp));
+        return true;
+    }
+
+    bool check_node(node_ptr n, key_type min_key, key_type max_key, key_type& max_end) const
+    {
+        key_type int_start = value_traits::get_start(value_traits::to_value_ptr(n));
+        key_type int_end = value_traits::get_end(value_traits::to_value_ptr(n));
+        assert(min_key <= int_start);
+        assert(int_start <= int_end);
+        assert(int_start <= max_key);
+        key_type max_end_left = std::numeric_limits<key_type>::min();
+        key_type max_end_right = std::numeric_limits<key_type>::min();
+        assert(not Node_Traits::get_left(n)
+               or check_node(Node_Traits::get_left(n), min_key, int_start, max_end_left));
+        assert(not Node_Traits::get_right(n)
+               or check_node(Node_Traits::get_right(n), int_start, max_key, max_end_right));
+        max_end = std::max(int_end, std::max(max_end_left, max_end_right));
+        assert(Node_Traits::get_max_end(n) == max_end);
+        return true;
     }
 
 private:
