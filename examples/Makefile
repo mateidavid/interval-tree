@@ -10,7 +10,7 @@ LDFLAGS = -L${BOOST_LIB} -Wl,--rpath=${BOOST_LIB} -lboost_program_options
 all: check-env test-itree
 
 clean:
-	rm test-itree
+	rm -f test-itree
 
 check-env:
 	@[ -d ${BOOST_INTRUSIVE}/include ] || { echo "BOOST_INTRUSIVE not found: ${BOOST_INTRUSIVE}/include"; exit 1; }
@@ -20,4 +20,4 @@ test-itree: test-itree.cpp \
 	${BOOST_INTRUSIVE}/include/boost/intrusive/bstree.hpp \
 	${BOOST_INCLUDE}/boost/program_options.hpp \
 	${BOOST_LIB}/libboost_program_options.so
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $<
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $< $(LDFLAGS)

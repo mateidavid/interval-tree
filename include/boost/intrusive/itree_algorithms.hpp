@@ -19,7 +19,9 @@ struct itree_node_extra_checker
    typedef ExtraChecker                            base_checker_t;
    typedef ValueTraits                             value_traits;
    typedef typename value_traits::node_traits      node_traits;
-   typedef typename node_traits::node_ptr          node_ptr;
+   typedef typename node_traits::const_node_ptr    const_node_ptr;
+   typedef typename value_traits::const_pointer    const_pointer;
+   typedef typename node_traits::key_type          key_type;
 
    typedef typename base_checker_t::return_type    return_type;
 
@@ -27,15 +29,15 @@ struct itree_node_extra_checker
       : base_checker_t(extra_checker), vt_p_(vt_p)
    {}
 
-   void operator () (const node_ptr& p,
+   void operator () (const const_node_ptr& p,
                      const return_type& check_return_left, const return_type& check_return_right,
                      return_type& check_return)
    {
-      node_ptr left = node_traits::get_left(p);
-      node_ptr right = node_traits::get_right(p);
-      value_traits::pointer val_p = vt_p_->to_value_ptr(p);
+      const_node_ptr left = node_traits::get_left(p);
+      const_node_ptr right = node_traits::get_right(p);
+      const_pointer val_p = vt_p_->to_value_ptr(p);
       BOOST_INTRUSIVE_INVARIANT_ASSERT(vt_p_->get_start(val_p) <= vt_p_->get_end(val_p));
-      node_traits::key_type max_end = vt_p_->get_end(val_p);
+      key_type max_end = vt_p_->get_end(val_p);
       if (left)
          max_end = std::max(max_end, node_traits::get_max_end(left));
       if (right)
@@ -44,7 +46,7 @@ struct itree_node_extra_checker
       base_checker_t::operator()(p, check_return_left, check_return_right, check_return);
    }
 
-   const value_traits const vt_p_;
+   const value_traits* const vt_p_;
 };
 
 } // namespace detail

@@ -145,7 +145,7 @@ typedef bi::list< Value, bi::value_traits< List_Value_Traits< Value > > > list_t
 
 static_assert(
     bi::detail::extra_data_manager<
-        bi::detail::ITree_Node_Traits < ITree_Value_Traits< Value > >
+        bi::detail::itree_node_traits < ITree_Value_Traits< Value > >
     >::enabled,
     "Extra data manager is not enabled");
 

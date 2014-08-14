@@ -256,7 +256,7 @@ public:
     template < class ExtraChecker >
     void check(ExtraChecker extra_checker) const
     {
-       Base::check(detail::itree_node_extra_checker(&this->get_value_traits(), extra_checker));
+       Base::check(detail::itree_node_extra_checker< Value_Traits, ExtraChecker >(&this->get_value_traits(), extra_checker));
     }
 
     void check() const
