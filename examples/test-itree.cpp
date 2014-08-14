@@ -361,6 +361,7 @@ void real_main(const Program_Options& po)
             clog << "destroying clone\n";
             t2.clear_and_dispose(delete_disposer< Value >());
         }
+        static_cast< const itree_type& >(t).check();
         if (po.print_tree_each_op)
         {
             print_tree(t);

@@ -9,6 +9,46 @@ namespace boost
 namespace intrusive
 {
 
+namespace detail
+{
+
+template<class ValueTraits, class ExtraChecker>
+struct itree_node_extra_checker
+      : public ExtraChecker
+{
+   typedef ExtraChecker                            base_checker_t;
+   typedef ValueTraits                             value_traits;
+   typedef typename value_traits::node_traits      node_traits;
+   typedef typename node_traits::node_ptr          node_ptr;
+
+   typedef typename base_checker_t::return_type    return_type;
+
+   itree_node_extra_checker(const value_traits* vt_p, ExtraChecker extra_checker)
+      : base_checker_t(extra_checker), vt_p_(vt_p)
+   {}
+
+   void operator () (const node_ptr& p,
+                     const return_type& check_return_left, const return_type& check_return_right,
+                     return_type& check_return)
+   {
+      node_ptr left = node_traits::get_left(p);
+      node_ptr right = node_traits::get_right(p);
+      value_traits::pointer val_p = vt_p_->to_value_ptr(p);
+      BOOST_INTRUSIVE_INVARIANT_ASSERT(vt_p_->get_start(val_p) <= vt_p_->get_end(val_p));
+      node_traits::key_type max_end = vt_p_->get_end(val_p);
+      if (left)
+         max_end = std::max(max_end, node_traits::get_max_end(left));
+      if (right)
+         max_end = std::max(max_end, node_traits::get_max_end(right));
+      BOOST_INTRUSIVE_INVARIANT_ASSERT(node_traits::get_max_end(p) == max_end);
+      base_checker_t::operator()(p, check_return_left, check_return_right, check_return);
+   }
+
+   const value_traits const vt_p_;
+};
+
+} // namespace detail
+
 template <typename Value_Traits>
 struct itree_algorithms : public rbtree_algorithms< typename Value_Traits::node_traits >
 {
