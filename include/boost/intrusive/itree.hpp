@@ -142,8 +142,8 @@ public:
                                      >::type qual_node_raw_ptr;
 
     Intersection_Iterator() {}
-    explicit Intersection_Iterator(qual_node_ptr node, key_type int_start = 0, key_type int_end = 0)
-    : _node(pointer_traits< node_ptr >::const_cast_from(node)), _int_start(int_start), _int_end(int_end) {}
+    explicit Intersection_Iterator(qual_node_ptr node, key_type int_start = 0, key_type int_end = 0, const Value_Traits* vtp = nullptr)
+    : _node(pointer_traits< node_ptr >::const_cast_from(node)), _int_start(int_start), _int_end(int_end), _vtp(vtp) {}
 
     // implicit conversion to const
     operator const Intersection_Iterator< Value_Traits, true >& () const
@@ -165,12 +165,13 @@ private:
     typedef itree_algorithms< Value_Traits > itree_algo;
 
     bool equal(const Intersection_Iterator& rhs) const { return _node == rhs._node; }
-    void increment() { _node = itree_algo::get_next_interval(_int_start, _int_end, _node, 2); }
+    void increment() { _node = itree_algo::get_next_interval(_vtp, _int_start, _int_end, _node, 2); }
     qual_reference dereference() const { return *Value_Traits::to_value_ptr(_node); }
 
     node_ptr _node;
     key_type _int_start;
     key_type _int_end;
+    const Value_Traits* _vtp;
 }; // class Intersection_Iterator
 
 } // namespace detail
@@ -231,6 +232,19 @@ public:
                                    iintersect_end());
     }
 
+    /** Get maximum right endpoint that is less than or equal to a given value.
+     * @param max_val Maximum value to consider.
+     * @return If no interval right endpoint is less than or equal to max_val, returns minimum possible value.
+     */
+    key_type max_end(key_type max_val) const
+    {
+        if (this->empty())
+        {
+            return std::numeric_limits< key_type >::min();
+        }
+        return itree_algo::max_end_stree(&this->get_value_traits(), itree_algo::root_node(this->header_ptr()), max_val);
+    }
+
     /** Get maximum right endpoint in the tree. */
     key_type max_end() const
     {
@@ -273,8 +287,8 @@ private:
             return iintersect_end();
         }
         return intersection_const_iterator(
-            itree_algo::get_next_interval(int_start, int_end, Node_Traits::get_parent(header), 0),
-            int_start, int_end);
+            itree_algo::get_next_interval(&this->get_value_traits(), int_start, int_end, Node_Traits::get_parent(header), 0),
+            int_start, int_end, &this->get_value_traits());
     }
     intersection_const_iterator iintersect_end() const
     {

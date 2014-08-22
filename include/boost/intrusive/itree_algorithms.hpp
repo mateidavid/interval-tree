@@ -59,29 +59,29 @@ struct itree_algorithms : public rbtree_algorithms< typename Value_Traits::node_
     typedef typename Node_Traits::node_ptr node_ptr;
     typedef typename Node_Traits::const_node_ptr const_node_ptr;
 
-    static bool possible_intersection_in_left_stree(
+    static bool possible_intersection_in_left_stree(const Value_Traits*,
         const key_type& int_start, const key_type&, const_node_ptr n)
     {
         return int_start <= Node_Traits::get_max_end(n);
     }
 
-    static bool possible_intersection_in_right_stree(
+    static bool possible_intersection_in_right_stree(const Value_Traits* vtp,
         const key_type& int_start, const key_type& int_end, const_node_ptr n)
     {
         return (int_start <= Node_Traits::get_max_end(n)
-                and Value_Traits::get_start(Value_Traits::to_value_ptr(n)) <= int_end);
+                and vtp->get_start(vtp->to_value_ptr(n)) <= int_end);
     }
 
-    static bool intersect_node(
+    static bool intersect_node(const Value_Traits* vtp,
         const key_type& int_start, const key_type& int_end, const_node_ptr n)
     {
-        key_type n_start = Value_Traits::get_start(Value_Traits::to_value_ptr(n));
-        key_type n_end = Value_Traits::get_end(Value_Traits::to_value_ptr(n));
+        key_type n_start = vtp->get_start(vtp->to_value_ptr(n));
+        key_type n_end = vtp->get_end(vtp->to_value_ptr(n));
         return ((int_start <= n_start and n_start <= int_end)
                 or (n_start <= int_start and int_start <= n_end));
     }
 
-    static node_ptr get_next_interval(
+    static node_ptr get_next_interval(const Value_Traits* vtp,
         const key_type& int_start, const key_type& int_end, const_node_ptr _n, int stage)
     {
         node_ptr n = pointer_traits< node_ptr >::const_cast_from(_n);
@@ -94,7 +94,7 @@ struct itree_algorithms : public rbtree_algorithms< typename Value_Traits::node_
             if (stage == 0)
             {
                 // arrived from parent; try left stree
-                if (possible_intersection_in_left_stree(int_start, int_end, n) and Node_Traits::get_left(n))
+                if (possible_intersection_in_left_stree(vtp, int_start, int_end, n) and Node_Traits::get_left(n))
                 {
                     n = Node_Traits::get_left(n);
                     stage = 0;
@@ -107,7 +107,7 @@ struct itree_algorithms : public rbtree_algorithms< typename Value_Traits::node_
             else if (stage == 1)
             {
                 // finished visiting left stree; try current node
-                if (intersect_node(int_start, int_end, n))
+                if (intersect_node(vtp, int_start, int_end, n))
                 {
                     return n;
                 }
@@ -119,7 +119,7 @@ struct itree_algorithms : public rbtree_algorithms< typename Value_Traits::node_
             else if (stage == 2)
             {
                 // visited current node; try right stree
-                if (possible_intersection_in_right_stree(int_start, int_end, n) and Node_Traits::get_right(n))
+                if (possible_intersection_in_right_stree(vtp, int_start, int_end, n) and Node_Traits::get_right(n))
                 {
                     n = Node_Traits::get_right(n);
                     stage = 0;
@@ -152,6 +152,27 @@ struct itree_algorithms : public rbtree_algorithms< typename Value_Traits::node_
                 }
             }
         }
+    }
+
+    static key_type max_end_stree(const Value_Traits* vtp, const_node_ptr n, key_type max_val)
+    {
+        if (not n)
+        {
+            return std::numeric_limits< key_type >::min();
+        }
+        if (Node_Traits::get_max_end(n) <= max_val)
+        {
+            return Node_Traits::get_max_end(n);
+        }
+        key_type res = std::numeric_limits< key_type >::min();
+        key_type tmp = vtp->get_end(vtp->to_value_ptr(n));
+        if (tmp <= max_val)
+        {
+            res = tmp;
+        }
+        res = std::max(res, max_end_stree(vtp, Node_Traits::get_left(n), max_val));
+        res = std::max(res, max_end_stree(vtp, Node_Traits::get_right(n), max_val));
+        return res;
     }
 };
 

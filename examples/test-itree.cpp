@@ -259,7 +259,7 @@ void real_main(const Program_Options& po)
     clog << "----- main loop\n";
     for (size_t i = 0; i < po.n_ops; ++i)
     {
-        int op = int(drand48()*5);
+        int op = int(drand48()*6);
         if (op == 0)
         {
             // insert new element
@@ -352,7 +352,7 @@ void real_main(const Program_Options& po)
         }
         else if (op == 4)
         {
-            // clon tree and check
+            // clone tree and check
             clog << "cloning tree of size: " << t.size() << '\n';
             itree_type t2;
             t2.clone_from(t, new_cloner< Value >(), delete_disposer< Value >());
@@ -360,6 +360,27 @@ void real_main(const Program_Options& po)
             check_max_ends(t2);
             clog << "destroying clone\n";
             t2.clear_and_dispose(delete_disposer< Value >());
+        }
+        else if (op == 5)
+        {
+            // check bounded max_end
+            size_t max_val = size_t(drand48() * po.range_max);
+            clog << "checking bounded max_end with max_val=" << max_val << "\n";
+            size_t correct_res = std::numeric_limits< size_t >::min();
+            for (const auto& e : t)
+            {
+                if (e._end <= max_val)
+                {
+                    correct_res = std::max(correct_res, e._end);
+                }
+            }
+            size_t res = t.max_end(max_val);
+            clog << "expecting: correct_res=" << correct_res << ", got res=" << res << "\n";
+            if (res != correct_res)
+            {
+                print_tree(t);
+                exit(1);
+            }
         }
         static_cast< const itree_type& >(t).check();
         if (po.print_tree_each_op)
@@ -390,7 +411,7 @@ int main(int argc, char* argv[])
         bo::options_description cmdline_opts_desc;
         bo::options_description visible_opts_desc("Allowed options");
         generic_opts_desc.add_options()
-            ("help,h", "produce help message")
+            ("help,?", "produce help message")
             ;
         config_opts_desc.add_options()
             ("max-load", bo::value<size_t>(&po.max_load)->default_value(100), "maximum load of the interval tree")
