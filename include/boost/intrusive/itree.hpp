@@ -8,7 +8,8 @@
 #include <boost/range/iterator_range.hpp>
 #include <boost/mpl/if.hpp>
 #include <boost/tti/tti.hpp>
-#include "itree_algorithms.hpp"
+#include <boost/intrusive/itree_algorithms.hpp>
+#include <boost/intrusive/detail/ii_iterator.hpp>
 
 
 namespace boost
@@ -107,73 +108,6 @@ struct itree_compare
     }
 }; // struct itree_compare
 
-template < typename Value_Traits, bool is_const >
-class Intersection_Iterator
-    : public boost::iterator_facade< Intersection_Iterator< Value_Traits, is_const >,
-                                     typename Value_Traits::value_type,
-                                     boost::forward_traversal_tag,
-                                     typename boost::mpl::if_c< is_const,
-                                                                typename Value_Traits::const_reference,
-                                                                typename Value_Traits::reference
-                                                              >::type
-                                   >
-{
-public:
-    typedef boost::iterator_facade< Intersection_Iterator< Value_Traits, is_const >,
-                                    typename Value_Traits::value_type,
-                                    boost::forward_traversal_tag,
-                                    typename boost::mpl::if_c< is_const,
-                                                               typename Value_Traits::const_reference,
-                                                               typename Value_Traits::reference
-                                                             >::type
-                                  > Base;
-    using typename Base::value_type;
-    typedef typename Base::reference qual_reference;
-    typedef typename Value_Traits::key_type key_type;
-    typedef typename Value_Traits::node_ptr node_ptr;
-    typedef typename Value_Traits::const_node_ptr const_node_ptr;
-    typedef typename boost::mpl::if_c< is_const,
-                                       const_node_ptr,
-                                       node_ptr
-                                     >::type qual_node_ptr;
-    typedef typename boost::mpl::if_c< is_const,
-                                       const value_type*,
-                                       value_type*
-                                     >::type qual_node_raw_ptr;
-
-    Intersection_Iterator() {}
-    explicit Intersection_Iterator(qual_node_ptr node, key_type int_start = 0, key_type int_end = 0, const Value_Traits* vtp = nullptr)
-    : _node(pointer_traits< node_ptr >::const_cast_from(node)), _int_start(int_start), _int_end(int_end), _vtp(vtp) {}
-
-    // implicit conversion to const
-    operator const Intersection_Iterator< Value_Traits, true >& () const
-    { return *reinterpret_cast< const Intersection_Iterator< Value_Traits, true >* >(this); }
-    operator Intersection_Iterator< Value_Traits, true >& ()
-    { return *reinterpret_cast< Intersection_Iterator< Value_Traits, true >* >(this); }
-
-    // explicit conversion to non-const
-    const Intersection_Iterator< Value_Traits, false >& unconst() const
-    { return *reinterpret_cast< const Intersection_Iterator< Value_Traits, false >* >(this); }
-    Intersection_Iterator< Value_Traits, false >& unconst()
-    { return *reinterpret_cast< Intersection_Iterator< Value_Traits, false >* >(this); }
-
-    qual_node_raw_ptr operator -> () const { return (&dereference()).operator ->(); }
-
-private:
-    friend class boost::iterator_core_access;
-
-    typedef itree_algorithms< Value_Traits > itree_algo;
-
-    bool equal(const Intersection_Iterator& rhs) const { return _node == rhs._node; }
-    void increment() { _node = itree_algo::get_next_interval(_vtp, _int_start, _int_end, _node, 2); }
-    qual_reference dereference() const { return *Value_Traits::to_value_ptr(_node); }
-
-    node_ptr _node;
-    key_type _int_start;
-    key_type _int_end;
-    const Value_Traits* _vtp;
-}; // class Intersection_Iterator
-
 } // namespace detail
 
 
@@ -193,10 +127,10 @@ public:
     typedef typename Value_Traits::const_pointer const_pointer;
     typedef typename Value_Traits::node_ptr node_ptr;
     typedef typename Value_Traits::const_node_ptr const_node_ptr;
-    typedef detail::Intersection_Iterator< Value_Traits, false > intersection_iterator;
-    typedef detail::Intersection_Iterator< Value_Traits, true > intersection_const_iterator;
-    typedef boost::iterator_range< detail::Intersection_Iterator< Value_Traits, false > > intersection_iterator_range;
-    typedef boost::iterator_range< detail::Intersection_Iterator< Value_Traits, true > > intersection_const_iterator_range;
+    typedef detail::ii_iterator< Value_Traits, false > intersection_iterator;
+    typedef detail::ii_iterator< Value_Traits, true > intersection_const_iterator;
+    typedef boost::iterator_range< intersection_iterator > intersection_iterator_range;
+    typedef boost::iterator_range< intersection_const_iterator > intersection_const_iterator_range;
 
     // disallow copy
     itree_impl(const itree_impl&) = delete;
@@ -287,13 +221,17 @@ private:
             return iintersect_end();
         }
         return intersection_const_iterator(
-            itree_algo::get_next_interval(&this->get_value_traits(), int_start, int_end, Node_Traits::get_parent(header), 0),
-            int_start, int_end, &this->get_value_traits());
+            typename intersection_const_iterator::regular_iterator(
+                itree_algo::get_next_interval(&this->get_value_traits(), int_start, int_end, Node_Traits::get_parent(header), 0),
+                &this->get_value_traits()),
+            int_start, int_end);
     }
     intersection_const_iterator iintersect_end() const
     {
-        const_node_ptr header = this->header_ptr();
-        return intersection_const_iterator(header);
+        return intersection_const_iterator(
+            typename intersection_const_iterator::regular_iterator(
+                pointer_traits< node_ptr >::const_cast_from(this->header_ptr()),
+                &this->get_value_traits()));
     }
 }; // class itree_impl
 
