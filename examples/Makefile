@@ -1,9 +1,10 @@
 BOOST_INCLUDE = /usr/include
 BOOST_LIB = /usr/lib/x86_64-linux-gnu
+BOOST_PROGRAM_OPTIONS_LIB = ${BOOST_LIB}/libboost_program_options.so
 
 CPPFLAGS = -I${BOOST_INTRUSIVE}/include -I ../include -I${BOOST_INCLUDE}
 CXXFLAGS = -std=c++11 -Wall -Wextra -pedantic -g3 -O0
-LDFLAGS = -L${BOOST_LIB} -Wl,--rpath=${BOOST_LIB} -lboost_program_options
+LDFLAGS = -L${BOOST_LIB} -Wl,--rpath=${BOOST_LIB} ${BOOST_PROGRAM_OPTIONS_LIB}
 
 .PHONY: all clean check-env
 
@@ -19,5 +20,5 @@ check-env:
 test-itree: test-itree.cpp \
 	${BOOST_INTRUSIVE}/include/boost/intrusive/bstree.hpp \
 	${BOOST_INCLUDE}/boost/program_options.hpp \
-	${BOOST_LIB}/libboost_program_options.so
+	${BOOST_PROGRAM_OPTIONS_LIB}
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $< $(LDFLAGS)
