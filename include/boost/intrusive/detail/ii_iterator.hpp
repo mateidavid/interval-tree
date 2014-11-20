@@ -24,7 +24,6 @@ class ii_iterator
 public:
     typedef tree_iterator< Value_Traits, Is_Const > regular_iterator;
     typedef typename Value_Traits::key_type key_type;
-    typedef typename tree_iterator< Value_Traits, Is_Const >::pointer pointer; // WHY ???
 
     ii_iterator()
         : ii_iterator::iterator_adaptor_(), _int_start(0), _int_end(0) {}
@@ -33,7 +32,9 @@ public:
     ii_iterator(const ii_iterator< Value_Traits, false >& other)
         : ii_iterator::iterator_adaptor_(other), _int_start(other._int_start), _int_end(other._int_end) {}
 
+    typedef typename tree_iterator< Value_Traits, Is_Const >::pointer pointer; // WHY ???
     regular_iterator operator -> () const { return this->base(); } // WHY ???
+    typedef std::forward_iterator_tag iterator_category; // WHY ???
 
 private:
     friend class boost::iterator_core_access;
