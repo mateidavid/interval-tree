@@ -1,9 +1,10 @@
-BOOST_INCLUDE = /usr/include
-BOOST_LIB = /usr/lib/x86_64-linux-gnu
-BOOST_PROGRAM_OPTIONS_LIB = ${BOOST_LIB}/libboost_program_options.so
+BOOST = /usr/local
+BOOST_INCLUDE = ${BOOST}/include
+BOOST_LIB = ${BOOST}/lib
+BOOST_PROGRAM_OPTIONS_LIB = -lboost_program_options
 
 CPPFLAGS = -I${BOOST_INTRUSIVE}/include -I ../include -I${BOOST_INCLUDE}
-CXXFLAGS = -std=c++11 -Wall -Wextra -pedantic -g3 -O0
+CXXFLAGS = -std=c++11 -O0 -g3 -ggdb -Wall -Wextra -pedantic
 LDFLAGS = -L${BOOST_LIB} -Wl,--rpath=${BOOST_LIB} ${BOOST_PROGRAM_OPTIONS_LIB}
 
 .PHONY: all clean check-env
