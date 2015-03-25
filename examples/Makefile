@@ -4,10 +4,10 @@ BOOST_LIB = ${BOOST}/lib
 BOOST_PROGRAM_OPTIONS_LIB = -lboost_program_options
 
 CPPFLAGS = -I${BOOST_INTRUSIVE}/include -I ../include -I${BOOST_INCLUDE}
-CXXFLAGS = -std=c++11 -O0 -g3 -ggdb -Wall -Wextra -pedantic
+CXXFLAGS = -std=c++11 -O0 -g3 -ggdb -fno-eliminate-unused-debug-types -Wall -Wextra -pedantic
 LDFLAGS = -L${BOOST_LIB} -Wl,--rpath=${BOOST_LIB} ${BOOST_PROGRAM_OPTIONS_LIB}
 
-.PHONY: all clean check-env
+.PHONY: all clean check-env gdb-run
 
 all: check-env test-itree
 
@@ -23,3 +23,6 @@ test-itree: test-itree.cpp \
 	${BOOST_INCLUDE}/boost/program_options.hpp \
 	${BOOST_PROGRAM_OPTIONS_LIB}
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $< $(LDFLAGS)
+
+gdb-run: test-itree
+	gdb -q -ex 'file test-itree' -ex 'b 262 if i >= 100' -ex 'r >/dev/null 2>&1' -ex 'p l.size()' -ex 'p l' -ex 'p t.size()' -ex 'p t' -ex q
